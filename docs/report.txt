@@ -1,0 +1,75 @@
+texts=529 values=1737 counts=315 parses=532 containers=7 roundtrips=300
+Fmt.cs → fmt.gd
+LogContainer.cs → container_result.gd
+LogContainer.cs → log_container.gd
+LogText.cs → log_text.gd
+NumText.cs → num_text.gd
+ 
+========================================================================
+一、同一份核心：C#（原样编译） vs GDScript 3（转译）
+========================================================================
+  text          529 / 529    一致
+  fixed       13896 / 13896  一致
+  fmt          1737 / 1737   一致
+  count         315 / 315    一致
+  parse         532 / 532    一致
+  container       7 / 7      一致
+  roundtrip     300 / 300    一致
+  结论：全部一致
+
+========================================================================
+二、对照：新核心 / TBH 旧实现（C#）/ Brotato 旧实现（GDScript 3）
+========================================================================
+  项目                              核心=TBH    核心=Brotato  TBH=Brotato   （共 N 条）
+  转义 escape                          529           345          345   （529）
+  转义往返 unescape(escape(s))           529           345          345   （529）
+  反转义任意文本 unescape(s)                529           509          509   （529）
+  日志数值（2 位小数）                       1561          1673         1525   （1737）
+  Fmt.short                         1736          1733         1734   （1737）
+  Fmt.dur                           1577          1737         1577   （1737）
+  Fmt.pct（输入 v/1000）                1720          1652         1637   （1737）
+  Fmt.count                          315           315          315   （315）
+
+  不一致的例子（每项最多 3 条）：
+    [转义 escape] 输入 '\r'
+        核心 '\\r'   TBH '\\r'   Brotato ''
+    [转义 escape] 输入 '\r\n'
+        核心 '\\r\\n'   TBH '\\r\\n'   Brotato '\\n'
+    [转义 escape] 输入 'xa\rx| n\nr'
+        核心 'xa\\rx\\p n\\nr'   TBH 'xa\\rx\\p n\\nr'   Brotato 'xax\\p n\\nr'
+    [转义往返 unescape(escape(s))] 输入 '\r'
+        核心 '\r'   TBH '\r'   Brotato ''
+    [转义往返 unescape(escape(s))] 输入 '\r\n'
+        核心 '\r\n'   TBH '\r\n'   Brotato '\n'
+    [转义往返 unescape(escape(s))] 输入 'xa\rx| n\nr'
+        核心 'xa\rx| n\nr'   TBH 'xa\rx| n\nr'   Brotato 'xax| n\nr'
+    [反转义任意文本 unescape(s)] 输入 '\\r\\n\\p\\\\'
+        核心 '\r\n|\\'   TBH '\r\n|\\'   Brotato 'r\n|\\'
+    [反转义任意文本 unescape(s)] 输入 '中ra🙂\\r n|\\\n\r🙂'
+        核心 '中ra🙂\r n|\n\r🙂'   TBH '中ra🙂\r n|\n\r🙂'   Brotato '中ra🙂r n|\n\r🙂'
+    [反转义任意文本 unescape(s)] 输入 'p#nrr=x\\r\r中'
+        核心 'p#nrr=x\r\r中'   TBH 'p#nrr=x\r\r中'   Brotato 'p#nrr=xr\r中'
+    [日志数值（2 位小数）] 输入 -0.0
+        核心 '0'   TBH '-0'   Brotato '0'
+    [日志数值（2 位小数）] 输入 1.005
+        核心 '1'   TBH '1.01'   Brotato '1'
+    [日志数值（2 位小数）] 输入 0.285
+        核心 '0.28'   TBH '0.29'   Brotato '0.28'
+    [Fmt.short] 输入 -0.0
+        核心 '0'   TBH '-0'   Brotato '-0'
+    [Fmt.short] 输入 -382.65
+        核心 '-382.7'   TBH '-382.7'   Brotato '-382.6'
+    [Fmt.short] 输入 -74.35
+        核心 '-74.4'   TBH '-74.4'   Brotato '-74.3'
+    [Fmt.dur] 输入 0.5
+        核心 '0:01'   TBH '0:00'   Brotato '0:01'
+    [Fmt.dur] 输入 2.5
+        核心 '0:03'   TBH '0:02'   Brotato '0:03'
+    [Fmt.dur] 输入 1000000000000.0
+        核心 '277777777:46:40'   TBH '-35791394:-08'   Brotato '277777777:46:40'
+    [Fmt.pct（输入 v/1000）] 输入 -0.0
+        核心 '0.0%'   TBH '-0.0%'   Brotato '-0.0%'
+    [Fmt.pct（输入 v/1000）] 输入 1.5
+        核心 '0.2%'   TBH '0.2%'   Brotato '0.1%'
+    [Fmt.pct（输入 v/1000）] 输入 2.5
+        核心 '0.3%'   TBH '0.3%'   Brotato '0.2%'

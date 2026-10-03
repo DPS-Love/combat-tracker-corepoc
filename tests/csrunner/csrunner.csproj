@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 核心直接编译（C# 目标不转译）；TBH 的旧实现只读地链接进来做对照，不改仓库 -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <NoWarn>$(NoWarn);CS8981</NoWarn>
+    <!-- TBH 仓库位置：dotnet build -p:TbhRepo=... 或环境变量 TBH_REPO -->
+    <TbhRepo Condition="'$(TbhRepo)' == ''">$(TBH_REPO)</TbhRepo>
+    <TbhRepo Condition="'$(TbhRepo)' == ''">../../../tbh-combat-tracker</TbhRepo>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../core/*.cs" Link="core/%(Filename)%(Extension)" />
+    <Compile Include="$(TbhRepo)/src/TbhCombatTracker/EventLogFormat.cs" Link="legacy/EventLogFormat.cs" />
+    <Compile Include="$(TbhRepo)/src/TbhCombatTracker/CombatEvent.cs" Link="legacy/CombatEvent.cs" />
+    <Compile Include="$(TbhRepo)/src/TbhCombatTracker/Fmt.cs" Link="legacy/Fmt.cs" />
+  </ItemGroup>
+</Project>

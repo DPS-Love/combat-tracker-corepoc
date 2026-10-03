@@ -1,0 +1,7 @@
+bin/
+obj/
+out/
+tests/gd3/gen/
+tests/gd3/legacy/
+.import/
+.godot/
